@@ -47,7 +47,7 @@ Nitrux SB Manager performs three steps:
 
 #### Installation
 
-For releases of Nitrux where `sb-manager` it is not available by default, do the following.
+For Nitrux releases where SB Manager is not available by default, do the following:
 > _⚠️ Important: To permanently add sb-manager to the root, see our tutorial [Filesystem, Security, Privacy, and Anonymization Features in Nitrux](https://nxos.org/tutorial/filesystem-security-privacy-and-anonymization-features-in-nitrux/)_
 
 ```
