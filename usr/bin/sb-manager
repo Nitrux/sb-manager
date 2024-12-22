@@ -28,7 +28,7 @@
 set -eu
 
 
-# -- Set program name and version.
+# -- Set program name.
 
 TOOL_NAME="Nitrux SB Manager"
 
@@ -128,7 +128,7 @@ ENROLL_PASSWORD=$(pwgen -0A 8 1)
 #   ====== START ======
 
 
-# -- Ensure this utility runs in Nitrux and has an Internet connection.
+# -- Ensure this utility runs in Nitrux.
 # -- Exit if the value is not 'nitrux'.
 
 if [[ "$CURRENT_DIST" == "$TARGET_DIST" ]]; then
