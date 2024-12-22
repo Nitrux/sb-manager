@@ -60,6 +60,10 @@ sudo cp $HOME/sb-manager/usr/bin/sb-manager /usr/bin
 Run `sb-manager` from the terminal and follow the prompts.
 > _♦ Information: The use of this utility requires `pkexec`_
 
+SB Manager does not have any configuration parameters or additional options.
+
+SB Manager is highly automated except for asking the user for permission to perform actions and input to create the OpenSSL certificate and the MOK password.
+
 
 # Licensing
 
