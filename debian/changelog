@@ -1,3 +1,9 @@
+sb-manager (0.0.2)  nitrux; urgency=medium
+
+  * Add dependencies to debian/control.
+
+ -- Uri Herrera <uri_herrera@nxos.org>  Fri, 14 Nov 2025 05:10:00 -0500
+
 sb-manager (0.0.1)  nitrux; urgency=medium
 
   * Create package.

@@ -8,8 +8,8 @@ Homepage: http://nx-desktop.org
 
 
 Package: sb-manager
-Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Architecture: amd64
+Depends: nx-overlayroot, kdialog, libnotify-bin, pkexec
 Description: SB Manager helps you sign kernels for Secure Boot.
  Nitrux SB Manager is a simple utility that creates machine owner keys (MOK) compatible with Secure Boot.
 
