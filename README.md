@@ -43,7 +43,7 @@ Nitrux SB Manager performs three steps:
 ### Requirements
 
 - Nitrux 3.7.1+.
-> [!TIP]
+> [!NOTE]
 > The utility will work out of the box starting with the mentioned release._
 
 
@@ -61,7 +61,7 @@ sudo cp $HOME/sb-manager/usr/bin/sb-manager /usr/bin
 # Usage
 
 Run `sb-manager` from the terminal and follow the prompts.
-> [!TIP]
+> [!NOTE]
 > The use of this utility requires `pkexec`_
 
 SB Manager does not have any configuration parameters or additional options.
