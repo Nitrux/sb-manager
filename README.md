@@ -10,7 +10,8 @@ SB Manager helps you sign kernels for Secure Boot with ease and efficiency.
 
 Nitrux SB Manager is a simple utility that creates machine owner keys (MOK) compatible with [Secure Boot](https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/oem-secure-boot).
 
-> _⚠️ Important: Nitrux SB Manager is intended to work exclusively in Nitrux OS, and using this utility in other distributions will break them or not work at all. Please do not open issues regarding this use case; they will be closed._
+> [!WARNING]
+> Nitrux SB Manager is intended to work exclusively in Nitrux OS, and using this utility in other distributions will break them or not work at all. Please do not open issues regarding this use case; they will be closed._
 
 # Overview
 
@@ -42,13 +43,15 @@ Nitrux SB Manager performs three steps:
 ### Requirements
 
 - Nitrux 3.7.1+.
-> _♦ Information: The utility will work out of the box starting with the mentioned release._
+> [!TIP]
+> The utility will work out of the box starting with the mentioned release._
 
 
 #### Installation
 
 For Nitrux releases where SB Manager is not available by default, do the following:
-> _⚠️ Important: To permanently add sb-manager to the root, see our tutorial [Filesystem, Security, Privacy, and Anonymization Features in Nitrux](https://nxos.org/tutorial/filesystem-security-privacy-and-anonymization-features-in-nitrux/)_
+> [!WARNING]
+> To permanently add sb-manager to the root, see our tutorial [Filesystem, Security, Privacy, and Anonymization Features in Nitrux](https://nxos.org/tutorial/filesystem-security-privacy-and-anonymization-features-in-nitrux/)_
 
 ```
 git clone --depth=1 https://github.com/Nitrux/sb-manager.git $HOME/nuts
@@ -58,7 +61,8 @@ sudo cp $HOME/sb-manager/usr/bin/sb-manager /usr/bin
 # Usage
 
 Run `sb-manager` from the terminal and follow the prompts.
-> _♦ Information: The use of this utility requires `pkexec`_
+> [!TIP]
+> The use of this utility requires `pkexec`_
 
 SB Manager does not have any configuration parameters or additional options.
 
