@@ -1,27 +1,10 @@
 #!/usr/bin/env bash
 
-#############################################################################################################################################################################
-#   The license used for this file and its contents is: BSD-3-Clause                                                                                                        #
-#                                                                                                                                                                           #
-#   Copyright <2024> <Uri Herrera <uri_herrera@nxos.org>>                                                                                                                   #
-#                                                                                                                                                                           #
-#   Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:                          #
-#                                                                                                                                                                           #
-#    1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.                                        #
-#                                                                                                                                                                           #
-#    2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer                                      #
-#       in the documentation and/or other materials provided with the distribution.                                                                                         #
-#                                                                                                                                                                           #
-#    3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software                    #
-#       without specific prior written permission.                                                                                                                          #
-#                                                                                                                                                                           #
-#    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,                      #
-#    THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS                  #
-#    BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE                 #
-#    GOODS OR SERVICES; LOSS OF USE, DATA,   OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,                      #
-#    STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.   #
-#############################################################################################################################################################################
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2024-2025 <Nitrux Latinoamericana S.C. <hello@nxos.org>>
 
+# -- This utility requires Nitrux booted in UEFI mode with OverlayFS active.
+# -- It is designed to generate a MOK and sign an installed kernel for Secure Boot.
 
 # -- Exit on errors.
 
@@ -36,38 +19,38 @@ TOOL_NAME="Nitrux SB Manager"
 # -- Print informative messages to stderr.
 
 puts_info() {
-	if [ -n "$1" ]; then
-		printf "%s: \e[34mInfo:\e[0m %s\n" "$TOOL_NAME" "$*" >&2
-	fi
+    if [ -n "$1" ]; then
+        printf "%s: \e[34mInfo:\e[0m %s\n" "$TOOL_NAME" "$*" >&2
+    fi
 }
 
 
 # -- Print success messages to stderr.
 
 puts_success() {
-	if [ -n "$1" ]; then
-		printf "%s: \e[32mSuccess:\e[0m %s\n" "$TOOL_NAME" "$*" >&2
-	fi
+    if [ -n "$1" ]; then
+        printf "%s: \e[32mSuccess:\e[0m %s\n" "$TOOL_NAME" "$*" >&2
+    fi
 }
 
 
 # -- Print error messages to stderr.
 
 puts_error() {
-	if [ -n "$1" ]; then
-		printf "%s: \e[31mError:\e[0m %b\n" "$TOOL_NAME" "$*" >&2
-	fi
+    if [ -n "$1" ]; then
+        printf "%s: \e[31mError:\e[0m %b\n" "$TOOL_NAME" "$*" >&2
+    fi
 }
 
 
 # -- Print messages or text using multiple lines to stderr.
 
 print_message() {
-	if [ $# -eq 0 ]; then
-		printf "\n" >&2
-	else
-		printf "%s\n" "$@" >&2
-	fi
+    if [ $# -eq 0 ]; then
+        printf "\n" >&2
+    else
+        printf "%s\n" "$@" >&2
+    fi
 }
 
 
@@ -82,27 +65,80 @@ puts_warning() {
 
 # -- Functions.
 
+capitalize_dist() {
+    echo "$1" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}'
+}
+
+
 overlay_ch() {
-	local ROOT=("pkexec" "overlayroot-chroot" "$@")
+    local ROOT=("pkexec" "overlayroot-chroot" "$@")
 
-	if ! command -v "${ROOT[0]}" >/dev/null 2>&1; then
-		puts_error "Error: '${ROOT[0]}' command not found. Please make sure it's installed and try again, quitting."
-		return 1
-	fi
+    if ! command -v "${ROOT[0]}" >/dev/null 2>&1; then
+        puts_error "'${ROOT[0]}' command not found. Please make sure it's installed and try again, quitting."
+        return 1
+    fi
 
-	"${ROOT[@]}"
+    "${ROOT[@]}"
 }
 
 unmount_directory() {
-	local DIRECTORY="$1"
+    local DIRECTORY="$1"
 
-	if mountpoint -q "$DIRECTORY"; then
-	puts_info "Unmounting: $DIRECTORY"
-	umount "$DIRECTORY"
-	else
-	puts_info "Directory is not mounted: $DIRECTORY"
-	fi
+    if mountpoint -q "$DIRECTORY"; then
+        puts_info "Unmounting: $DIRECTORY"
+        umount "$DIRECTORY"
+    else
+        puts_info "Directory is not mounted: $DIRECTORY"
+    fi
 }
+
+check_dependencies() {
+    local deps=("pkexec" "overlayroot-chroot" "sbsign" "sbverify" "openssl" "mokutil" "pwgen" "kdialog" "notify-send" "findfs" "awk" "grep" "mountpoint" "sed" "tr" "sort" "find" "mktemp" "install" "cp" "mv" "rm")
+    local missing=()
+
+    for cmd in "${deps[@]}"; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            missing+=("$cmd")
+        fi
+    done
+
+    if [ ${#missing[@]} -gt 0 ]; then
+        puts_error "Missing required commands: ${missing[*]}"
+        if command -v notify-send >/dev/null 2>&1; then
+            notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Missing Dependencies" "Required commands not found: ${missing[*]}"
+        fi
+        exit 1
+    fi
+}
+
+overlay_mount_dev() {
+    if overlay_ch mountpoint -q /dev >/dev/null 2>&1; then
+        return 0
+    fi
+
+    puts_info "Mounting /dev inside overlayroot-chroot..."
+    overlay_ch mount -t devtmpfs dev /dev
+    OVERLAY_DEV_WAS_MOUNTED=1
+}
+
+overlay_unmount_dev() {
+    if [ "${OVERLAY_DEV_WAS_MOUNTED:-0}" -eq 1 ]; then
+        puts_info "Unmounting /dev inside overlayroot-chroot..."
+        overlay_ch umount /dev >/dev/null 2>&1 || true
+    fi
+}
+
+cleanup_manager() {
+    puts_info "Cleaning up mounts..."
+
+    overlay_unmount_dev
+
+    if mountpoint -q /var/lib; then
+        pkexec umount /var/lib >/dev/null 2>&1 || true
+    fi
+}
+
+trap cleanup_manager EXIT INT TERM ERR
 
 
 # -- Variables.
@@ -111,7 +147,18 @@ CURRENT_DIST=$(awk -F'=' '/VERSION_CODENAME/{print $NF}' /etc/os-release)
 TARGET_DIST="nitrux"
 PRETTY_DIST=$(awk -F'=' '/PRETTY_NAME/{print $NF}' /etc/os-release)
 
-SB_STATE=$(mokutil --sb-state | grep -oP '(SecureBoot \K(enabled|disabled))')
+CURRENT_DIST=${CURRENT_DIST%\"}
+CURRENT_DIST=${CURRENT_DIST#\"}
+PRETTY_DIST=${PRETTY_DIST%\"}
+PRETTY_DIST=${PRETTY_DIST#\"}
+
+if ! SB_STATE=$(mokutil --sb-state 2>/dev/null | awk '/SecureBoot/ {print $NF}' | tr -d '.'); then
+    puts_error "Unable to determine Secure Boot status. mokutil may not be available or requires elevated privileges."
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Secure Boot Status Check Failed" "Unable to determine Secure Boot status. mokutil may not be available."
+    fi
+    exit 1
+fi
 
 OVERLAYROOT_CHROOT="/usr/sbin/overlayroot-chroot"
 
@@ -125,17 +172,26 @@ CONFIGFILE="/etc/ssl/openssl-mok.cnf"
 
 ENROLL_PASSWORD=$(pwgen -0A 8 1)
 
+# -- Track if /dev was mounted by this script (for cleanup).
+
+OVERLAY_DEV_WAS_MOUNTED=0
+
 #   ====== START ======
+
+
+# -- Check dependencies first.
+
+check_dependencies
 
 
 # -- Ensure this utility runs in Nitrux.
 # -- Exit if the value is not 'nitrux'.
 
 if [[ "$CURRENT_DIST" == "$TARGET_DIST" ]]; then
-	puts_success "This utility is running in $(echo "$TARGET_DIST" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}'), continuing..."
+    puts_success "This utility is running in $(capitalize_dist "$TARGET_DIST"), continuing..."
 else
-	notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "$TOOL_NAME is intended to work exclusively in $(echo "$TARGET_DIST" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')." "Using this utility in $(echo "$CURRENT_DIST" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}') will break it and not work at all, quitting."
-	exit 1
+    notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "$TOOL_NAME is intended to work exclusively in $(capitalize_dist "$TARGET_DIST")." "Using this utility in $(capitalize_dist "$CURRENT_DIST") will break it and not work at all, quitting."
+    exit 1
 fi
 
 
@@ -152,7 +208,7 @@ kdialog --msgbox \
 </ul>
 <hr />
 <p>Click Accept to begin configuring your system.</p>
-<p>Licensed under the BSD-3-Clause license — ©2024 Nitrux Latinoamericana S.C.</p>
+<p>Licensed under the BSD-3-Clause license — ©2024-2025 Nitrux Latinoamericana S.C.</p>
 <p>Report issues at: <a href=\"https://github.com/Nitrux/nitrux-bug-tracker\">https://github.com/Nitrux/nitrux-bug-tracker</a></p>
 " --title "$TOOL_NAME"
 
@@ -160,8 +216,8 @@ kdialog --msgbox \
 # -- Check if using UEFI or Legacy.
 
 if [ ! -d /sys/firmware/efi ]; then
-	notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Legacy (BIOS) Mode Detected" "This tool requires the system to be booted in UEFI Mode."
-	exit 1
+    notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Legacy (BIOS) Mode Detected" "This tool requires the system to be booted in UEFI Mode."
+    exit 1
 fi
 
 
@@ -170,15 +226,15 @@ fi
 notify-send -a "$TOOL_NAME" -i "preferences-system-login" "Status Verification" "Checking Secure Boot status, please wait..."
 
 if [[ "$SB_STATE" == "disabled" ]]; then
-	if ! kdialog --warningcontinuecancel "Secure Boot is not enabled in the UEFI.<br><br>Do you still want to sign a kernel?" --title "$TOOL_NAME"; then
-		notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Kernel Signing Canceled" "If Secure Boot is later enabled, the system will be unbootable without signing the kernel."
-		exit 0
-	fi
+    if ! kdialog --warningcontinuecancel "Secure Boot is not enabled in the UEFI.<br><br>Do you still want to sign a kernel?" --title "$TOOL_NAME"; then
+        notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Kernel Signing Canceled" "If Secure Boot is later enabled, the system will be unbootable without signing the kernel."
+        exit 0
+    fi
 else
-	if ! kdialog --yesno "Secure Boot is enabled in the UEFI.<br><br>Do you want to sign a kernel?" --title "$TOOL_NAME"; then
-		notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Kernel Signing Canceled" "You chose not to sign the kernel."
-		exit 0
-	fi
+    if ! kdialog --yesno "Secure Boot is enabled in the UEFI.<br><br>Do you want to sign a kernel?" --title "$TOOL_NAME"; then
+        notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Kernel Signing Canceled" "You chose not to sign the kernel."
+        exit 0
+    fi
 fi
 
 
@@ -186,19 +242,27 @@ fi
 # -- Quit if either of these checks fails since OverlayFS is assumed to be used.
 
 if [[ ! -f "$OVERLAYROOT_CHROOT" ]]; then
-	notify-send -a "$TOOL_NAME" -u critical --action=Understood -i  "preferences-system-login" "Overlayroot Missing" "The executable $OVERLAYROOT_CHROOT was not found."
-	exit 1
+    notify-send -a "$TOOL_NAME" -u critical --action=Understood -i  "preferences-system-login" "Overlayroot Missing" "The executable $OVERLAYROOT_CHROOT was not found."
+    exit 1
 fi
 
 if ! mount | grep -q "overlayroot"; then
-	notify-send -a "$TOOL_NAME" -u critical --action=Understood -i  "preferences-system-login" "No OverlayFS Detected" "No OverlayFS mounts are in use. $TOOL_NAME requires OverlayFS to be active."
-	exit 1
+    notify-send -a "$TOOL_NAME" -u critical --action=Understood -i  "preferences-system-login" "No OverlayFS Detected" "No OverlayFS mounts are in use. $TOOL_NAME requires OverlayFS to be active."
+    exit 1
 fi
 
 
-# -- Mount the devices filesystem.
+# -- Prompt for authentication once.
 
-overlay_ch mount -t devtmpfs dev /dev
+if ! pkexec true >/dev/null 2>&1; then
+    notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Authentication Failed" "Unable to authenticate with pkexec."
+    exit 1
+fi
+
+
+# -- Mount /dev inside overlayroot-chroot.
+
+overlay_mount_dev
 
 
 # -- Prompt user for OpenSSL MOK configuration values using kdialog.
@@ -214,7 +278,9 @@ if [[ ! -f "$CONFIGFILE" ]]; then
 
     notify-send -a "$TOOL_NAME" -i "preferences-system-login" "Preparing Task" "Generating OpenSSL configuration file for Secure Boot, please wait..."
 
-    pkexec bash -c "cat > '$CONFIGFILE' <<EOF
+    TMP_OPENSSL_CFG=$(mktemp)
+
+    cat >"$TMP_OPENSSL_CFG" <<EOF
 HOME                    = .
 RANDFILE                = \$ENV::HOME/.rnd
 [ req ]
@@ -223,20 +289,22 @@ x509_extensions         = v3
 string_mask             = utf8only
 prompt                  = no
 [ req_distinguished_name ]
-countryName             = \"$COUNTRYCODE\"
-stateOrProvinceName     = \"$STATE\"
-localityName            = \"$CITY\"
-organizationName        = \"$ORG\"
-commonName              = \"Secure Boot Signing Key\"
-emailAddress            = \"$EMAIL\"
+countryName             = "$COUNTRYCODE"
+stateOrProvinceName     = "$STATE"
+localityName            = "$CITY"
+organizationName        = "$ORG"
+commonName              = "Secure Boot Signing Key"
+emailAddress            = "$EMAIL"
 [ v3 ]
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid:always,issuer
 basicConstraints        = critical,CA:FALSE
 extendedKeyUsage        = codeSigning,1.3.6.1.4.1.2312.16.1.3
-nsComment               = \"OpenSSL Generated Certificate\"
+nsComment               = "OpenSSL Generated Certificate"
 EOF
-chmod 600 '$CONFIGFILE'"
+
+    pkexec install -m 600 "$TMP_OPENSSL_CFG" "$CONFIGFILE"
+    rm -f "$TMP_OPENSSL_CFG"
 
     notify-send -a "$TOOL_NAME" -i "preferences-system-login" "Task Complete" "Successfully generated OpenSSL configuration file. Continuing..."
 fi
@@ -247,20 +315,27 @@ fi
 if [[ ! -f "$MOK_SKEY_PATH" || ! -f "$PEM_CERT_PATH" ]]; then
     notify-send -a "$TOOL_NAME" -i "preferences-system-login" "Preparing Task" "Generating new MOK for Secure Boot, please wait..."
 
-    pkexec bash -c "
-        [[ ! -d \"$MOK_CERT_DIR\" ]] && mkdir -p \"$MOK_CERT_DIR\"
+    pkexec mkdir -p "$MOK_CERT_DIR"
 
-        openssl req -config \"$CONFIGFILE\" \
-            -new -x509 -newkey rsa:2048 \
-            -nodes -days 36500 -outform DER \
-            -keyout \"$MOK_SKEY_PATH\" \
-            -out \"$DER_CERT_PATH\"
+    if ! pkexec openssl req -config "$CONFIGFILE" \
+        -new -x509 -newkey rsa:2048 \
+        -nodes -days 36500 -outform DER \
+        -keyout "$MOK_SKEY_PATH" \
+        -out "$DER_CERT_PATH"; then
+        notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "OpenSSL Failed" "Failed to generate the MOK key and certificate using OpenSSL."
+        exit 1
+    fi
 
-        openssl x509 -inform der -in \"$DER_CERT_PATH\" \
-            -out \"$PEM_CERT_PATH\"
+    if ! pkexec openssl x509 -inform der -in "$DER_CERT_PATH" \
+        -out "$PEM_CERT_PATH"; then
+        notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "OpenSSL Failed" "Failed to convert the certificate from DER to PEM using OpenSSL."
+        exit 1
+    fi
 
-        chmod 600 \"$MOK_SKEY_PATH\" \"$PEM_CERT_PATH\"
-    "
+    if ! pkexec chmod 600 "$MOK_SKEY_PATH" "$PEM_CERT_PATH"; then
+        notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Permission Set Failed" "Failed to set permissions on the MOK files."
+        exit 1
+    fi
 
     notify-send -a "$TOOL_NAME" -i "preferences-system-login" "Task Complete" "Successfully generated MOK, continuing..."
 fi
@@ -269,12 +344,12 @@ fi
 # -- Mount NX_VAR_LIB partition.
 # -- Ensure that the partition exists and is mountable.
 
-if ! VAR_LIB_PARTITION=$(findfs LABEL=NX_VAR_LIB); then
+if ! VAR_LIB_PARTITION=$(findfs LABEL=NX_VAR_LIB 2>/dev/null); then
     notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Partition Not Found" "The NX_VAR_LIB partition could not be found. Ensure the partition exists and try again."
     exit 1
 fi
 
-if ! overlay_ch mount -t auto "$VAR_LIB_PARTITION" /var/lib; then
+if ! pkexec mount -t auto "$VAR_LIB_PARTITION" /var/lib; then
     notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Mount Failed" "Failed to mount the NX_VAR_LIB partition. Ensure it is accessible and try again."
     exit 1
 fi
@@ -282,7 +357,12 @@ fi
 
 # -- Allow the user to select a kernel to sign.
 
-mapfile -t KERNEL_FILES < <(find /boot -maxdepth 1 -name 'vmlinuz-*' -type f | sort)
+mapfile -t KERNEL_FILES < <(find /boot -maxdepth 1 -name 'vmlinuz-*' -type f 2>/dev/null | sort)
+
+if [ ${#KERNEL_FILES[@]} -eq 0 ]; then
+    notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "No Kernels Found" "No kernel files were found in /boot. Cannot proceed."
+    exit 1
+fi
 
 KERNEL_VERSIONS=()
 for kernel in "${KERNEL_FILES[@]}"; do
@@ -296,20 +376,39 @@ if [[ -z "$SELECTED_VERSION" ]]; then
     exit 1
 fi
 
+if [[ ! -f "/boot/vmlinuz-$SELECTED_VERSION" ]]; then
+    notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Invalid Kernel Selection" "The selected kernel does not exist in /boot. Please try again."
+    exit 1
+fi
+
 SELECTED_KERNEL="/boot/vmlinuz-$SELECTED_VERSION"
 SIGNED_KERNEL_TEMP="/boot/vmlinuz-$SELECTED_VERSION.signed-temp"
 
 notify-send -a "$TOOL_NAME" -i "preferences-system-login" "Preparing Task" "Signing kernel version $SELECTED_VERSION with MOK, please wait..."
 
-overlay_ch sbsign --key "$MOK_SKEY_PATH" --cert "$PEM_CERT_PATH" --output "$SIGNED_KERNEL_TEMP" "$SELECTED_KERNEL"
+KERNEL_BACKUP="${SELECTED_KERNEL}.unsigned"
 
-if overlay_ch sbverify --list "$SIGNED_KERNEL_TEMP"; then
-    overlay_ch mv "$SIGNED_KERNEL_TEMP" "$SELECTED_KERNEL"
+if [ -f "$KERNEL_BACKUP" ]; then
+    puts_warning "Backup already exists: $KERNEL_BACKUP (skipping backup creation)"
+else
+    if ! pkexec cp -a "$SELECTED_KERNEL" "$KERNEL_BACKUP"; then
+        notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Backup Failed" "Failed to create backup for kernel version $SELECTED_VERSION. Cannot proceed."
+        exit 1
+    fi
+fi
+
+if ! pkexec sbsign --key "$MOK_SKEY_PATH" --cert "$PEM_CERT_PATH" --output "$SIGNED_KERNEL_TEMP" "$SELECTED_KERNEL"; then
+    notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Signing Failed" "Failed to sign kernel version $SELECTED_VERSION. The sbsign command failed."
+    exit 1
+fi
+
+if pkexec sbverify --list "$SIGNED_KERNEL_TEMP"; then
+    pkexec mv "$SIGNED_KERNEL_TEMP" "$SELECTED_KERNEL"
     notify-send -a "$TOOL_NAME" -i "preferences-system-login" "Task Complete" "Successfully signed kernel version $SELECTED_VERSION with MOK, continuing..."
 else
-    overlay_ch rm -f "$SIGNED_KERNEL_TEMP"
-    notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Signing Failed" "Failed to sign kernel version $SELECTED_VERSION. Exiting."
-    unmount_directory "$VAR_LIB_PARTITION" || { puts_error "Failed to unmount NX_VAR_LIB, quitting."; exit 1; }
+    pkexec rm -f "$SIGNED_KERNEL_TEMP" || true
+    notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Verification Failed" "Kernel signature verification failed for version $SELECTED_VERSION. Exiting."
+    exit 1
 fi
 
 
@@ -320,12 +419,30 @@ notify-send -a "$TOOL_NAME" -i "preferences-system-login" "Preparing Task" "Enro
 
 kdialog --msgbox "We generated a random password to enroll the MOK in mokutil and the Shim UEFI Key Management on reboot.<br><br><h2>Password: $ENROLL_PASSWORD</h2><br><br>Save it securely, as it is also required for removing the MOK.<br><br>The mokutil input password prompt will be displayed in the <strong><u>terminal window</u></strong>. However, it will not display characters as you type." --title "$TOOL_NAME"
 
-puts_info "Use generated password: $ENROLL_PASSWORD"
+if [ ! -t 0 ]; then
+    notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Enrollment Requires a Terminal" "Run $TOOL_NAME from a terminal to enroll the MOK (mokutil requires an interactive TTY)."
+    exit 1
+fi
 
-pkexec mokutil --import "$DER_CERT_PATH"
+if ! pkexec mokutil --import "$DER_CERT_PATH" < /dev/tty > /dev/tty; then
+    notify-send -a "$TOOL_NAME" -u critical --action=Understood -i "preferences-system-login" "Enrollment Failed" "Failed to enroll the MOK. Please check the terminal for errors."
+    exit 1
+fi
 
-notify-send -a "$TOOL_NAME" -u critical -i "preferences-system-login" "All Tasks Completed" "$TOOL_NAME succesfully completed all its tasks."
 
-kdialog --msgbox "Reboot and approve the enrolled MOK in the Shim UEFI Key Management system (MOKManager), select <strong>Enroll MOK</strong> then <strong>Continue</strong> and <strong>Yes</strong>, finally, enter the password.<br><br>After approving the MOK enrollment, reboot and enable Secure Boot in the UEFI (if necessary) and boot \"$PRETTY_DIST\""
+# -- Unmount NX_VAR_LIB partition.
+
+if mountpoint -q /var/lib; then
+    pkexec umount /var/lib >/dev/null 2>&1 || true
+fi
+
+
+# -- Unmount /dev inside overlayroot-chroot.
+
+overlay_unmount_dev
+
+notify-send -a "$TOOL_NAME" -u critical -i "preferences-system-login" "All Tasks Completed" "$TOOL_NAME successfully completed all its tasks."
+
+kdialog --msgbox "Reboot and approve the enrolled MOK in the Shim UEFI Key Management system (MOKManager), select <strong>Enroll MOK</strong> then <strong>Continue</strong> and <strong>Yes</strong>, finally, enter the password.<br><br>After approving the MOK enrollment, reboot and enable Secure Boot in the UEFI (if necessary) and boot \"$PRETTY_DIST\"" --title "$TOOL_NAME"
 
 #   ====== END ======

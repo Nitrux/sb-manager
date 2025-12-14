@@ -1,3 +1,63 @@
+sb-manager (0.0.3)  nitrux; urgency=medium
+
+  [ New Features ]
+  * Add documentation header explaining script requirements and purpose.
+  * Add overlay_mount_dev() function for smart /dev mounting with state tracking.
+  * Add overlay_unmount_dev() function for conditional unmounting.
+  * Add OVERLAY_DEV_WAS_MOUNTED variable to track mount state for cleanup.
+  * Add early pkexec authentication prompt to improve user experience.
+  * Add automatic kernel backup with .unsigned extension before signing.
+  * Add check to skip backup creation if backup already exists.
+  * Add TTY detection to ensure mokutil can run interactively.
+  * Add validation check for selected kernel file existence after user selection.
+
+  [ Error Handling Improvements ]
+  * Add error checking for mokutil --sb-state command with fallback message.
+  * Add error checking for /dev mount operation inside overlayroot-chroot.
+  * Add error checking for OpenSSL key generation (req command).
+  * Add error checking for OpenSSL certificate conversion (x509 command).
+  * Add error checking for chmod operations on MOK files.
+  * Add error checking for kernel backup creation with clear error message.
+  * Add error checking for sbsign operation.
+  * Add error checking for mokutil enrollment with TTY requirement notice.
+  * Add conditional notify-send in dependency check to prevent errors.
+  * Add conditional notify-send in SB_STATE check to prevent early failures.
+
+  [ Security & Code Quality ]
+  * Improve OpenSSL config file generation using mktemp and install command.
+  * Replace nested bash heredoc with safer temporary file approach.
+  * Simplify MOK generation using individual pkexec commands instead of nested script.
+  * Add explicit error handling for permission setting on MOK files.
+  * Expand dependency list to include all utilities (awk, grep, mountpoint, sed,
+    tr, sort, find, mktemp, install, cp, mv, rm).
+
+  [ Mount & Cleanup Management ]
+  * Add EXIT signal to trap for proper cleanup on normal exit.
+  * Improve cleanup_manager() to handle both /dev and /var/lib unmounts.
+  * Add explicit manual cleanup before final success notifications.
+  * Remove /dev mount from main flow (now handled by overlay_mount_dev).
+
+  [ Variable & Parsing Improvements ]
+  * Add quote stripping for CURRENT_DIST from os-release.
+  * Add quote stripping for PRETTY_DIST from os-release.
+  * Improve SB_STATE parsing using awk and tr instead of grep -P for portability.
+  * Add 2>/dev/null to findfs command to suppress stderr noise.
+  * Add 2>/dev/null to find command to suppress stderr noise.
+  * Add inline comment for OVERLAY_DEV_WAS_MOUNTED variable purpose.
+
+  [ User Experience ]
+  * Improve mokutil invocation with proper TTY redirection (< /dev/tty > /dev/tty).
+  * Add warning message when kernel backup already exists.
+  * Add --title parameter to final kdialog message for consistency.
+  * Reorganize to check dependencies before showing welcome dialog.
+
+  [ Bug Fixes ]
+  * Fix unmount_directory() function indentation for consistency.
+  * Fix typo: "succesfully" → "successfully" in final notification.
+  * Remove redundant "Error:" prefix in overlay_ch error message.
+
+ -- Uri Herrera <uri_herrera@nxos.org>  Fri, 14 Dec 2025 12:47:00 -0500
+
 sb-manager (0.0.2)  nitrux; urgency=medium
 
   * Add dependencies to debian/control.
