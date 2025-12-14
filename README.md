@@ -44,7 +44,7 @@ Nitrux SB Manager performs three steps:
 
 - Nitrux 3.7.1+.
 > [!NOTE]
-> The utility will work out of the box starting with the mentioned release._
+> The utility will work out of the box starting with the mentioned release.
 
 
 #### Installation
