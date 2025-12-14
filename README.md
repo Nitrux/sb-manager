@@ -11,7 +11,7 @@ SB Manager helps you sign kernels for Secure Boot with ease and efficiency.
 Nitrux SB Manager is a simple utility that creates machine owner keys (MOK) compatible with [Secure Boot](https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/oem-secure-boot).
 
 > [!WARNING]
-> Nitrux SB Manager is intended to work exclusively in Nitrux OS, and using this utility in other distributions will break them or not work at all. Please do not open issues regarding this use case; they will be closed._
+> Nitrux SB Manager is intended to work exclusively in Nitrux OS, and using this utility in other distributions will break them or not work at all. Please do not open issues regarding this use case; they will be closed.
 
 # Overview
 
@@ -51,7 +51,7 @@ Nitrux SB Manager performs three steps:
 
 For Nitrux releases where SB Manager is not available by default, do the following:
 > [!WARNING]
-> To permanently add sb-manager to the root, see our tutorial [Filesystem, Security, Privacy, and Anonymization Features in Nitrux](https://nxos.org/tutorial/filesystem-security-privacy-and-anonymization-features-in-nitrux/)_
+> To permanently add sb-manager to the root, see our tutorial [Filesystem, Security, Privacy, and Anonymization Features in Nitrux](https://nxos.org/tutorial/filesystem-security-privacy-and-anonymization-features-in-nitrux/)
 
 ```
 git clone --depth=1 https://github.com/Nitrux/sb-manager.git $HOME/nuts
