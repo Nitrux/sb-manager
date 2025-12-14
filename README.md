@@ -62,7 +62,7 @@ sudo cp $HOME/sb-manager/usr/bin/sb-manager /usr/bin
 
 Run `sb-manager` from the terminal and follow the prompts.
 > [!NOTE]
-> The use of this utility requires `pkexec`_
+> The use of this utility requires `pkexec`
 
 SB Manager does not have any configuration parameters or additional options.
 
