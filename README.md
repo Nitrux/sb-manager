@@ -36,7 +36,8 @@ Nitrux SB Manager performs three steps:
 - A bootloader.
 - A GUI for certificate management.
 - A container, virtual machine, Live USB creator, Linux distribution, desktop environment, or "proprietary software."
-  - _**Note**: We don't know why anyone would think that, but one can never know, so let's clarify that._
+> [!NOTE]
+> We don't know why anyone would think that, but one can never know, so let's clarify that.
 
 ---
 
