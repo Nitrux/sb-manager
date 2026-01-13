@@ -48,17 +48,6 @@ Nitrux SB Manager performs three steps:
 > The utility will work out of the box starting with the mentioned release.
 
 
-#### Installation
-
-For Nitrux releases where SB Manager is not available by default, do the following:
-> [!WARNING]
-> To permanently add sb-manager to the root, see our tutorial [Filesystem, Security, Privacy, and Anonymization Features in Nitrux](https://nxos.org/tutorial/filesystem-security-privacy-and-anonymization-features-in-nitrux/)
-
-```
-git clone --depth=1 https://github.com/Nitrux/sb-manager.git $HOME/nuts
-sudo cp $HOME/sb-manager/usr/bin/sb-manager /usr/bin
-```
-
 # Usage
 
 Run `sb-manager` from the terminal and follow the prompts.
